@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="/style.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+      <script src="https://www.gstatic.com/firebasejs/7.17.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.17.2/firebase-database.js"></script>
     <!-- font-family: 'Bebas Neue', cursive;
     font-family: 'Special Elite', cursive; -->
     <!-- font-family: 'Share Tech Mono', monospace; -->
@@ -140,6 +142,14 @@
     background-color:white;
     color:black;
   }
+  .chat-container {
+  width: 500px;
+  height: 500px;
+  background-color: #f1f1f1;
+  margin: 0 auto;
+  padding: 20px;
+  overflow: scroll;
+}
 </style>
 <body>
 
@@ -155,7 +165,13 @@
     <div class="imageContainer">
         <img src="./content/img/dallE19secondimage.jpg" class="image"/>
     </div>
-
+    <div class="chat-container">
+        <div id="messages"></div>
+        <form id="message-form">
+            <input type="text" id="message-input">
+            <button type="submit">Send</button>
+        </form>
+    </div>
     <div class="footer">
         <p class="smalltext">By Sajan Basra</p>
     </div>
@@ -177,66 +193,37 @@ const firebaseConfig = {
   messagingSenderId: "11664115669",
   appId: "1:11664115669:web:dc4e058fae0bbc1066df5c"
 };
-	// Initialize Firebase
-	firebase.initializeApp(firebaseConfig);
-  var myName = prompt("Enter your name");
-</script>
-  <!-- create a form to send message -->
-<form onsubmit="return sendMessage();">
-	<input class="enter-message" id="message" placeholder="Enter message" autocomplete="off">
+// Get a reference to the database service
+var database = firebase.database();
 
-	<input class="submit-button" type="submit">
-</form>
-	
-<script>
-	function sendMessage() {
-		// get message
-		var message = document.getElementById("message").value;
+// Get references to the form and input elements
+var messageForm = document.getElementById('message-form');
+var messageInput = document.getElementById('message-input');
+var messagesDiv = document.getElementById('messages');
 
-		// save in database
-		firebase.database().ref("messages").push().set({
-			"sender": myName,
-			"message": message
-		});
+// Listen for form submission
+messageForm.addEventListener('submit', submitMessage);
 
-		// prevent form from submitting
-		return false;
-	}
-</script>
-  <!-- create a list -->
-<ul id="messages"></ul>
-	
-<script>
-	// listen for incoming messages
-	firebase.database().ref("messages").on("child_added", function (snapshot) {
-		var html = "";
-		// give each message a unique ID
-		html += "<li id='message-" + snapshot.key + "'>";
-		// show delete button if message is sent by me
-		if (snapshot.val().sender == myName) {
-			html += "<button data-id='" + snapshot.key + "' onclick='deleteMessage(this);'>";
-				html += "Delete";
-			html += "</button>";
-		}
-		html += snapshot.val().sender + ": " + snapshot.val().message;
-		html += "</li>";
+function submitMessage(e) {
+  e.preventDefault();
 
-		document.getElementById("messages").innerHTML += html;
-	});
-</script>
-  <script>
-  function deleteMessage(self) {
-	// get message ID
-	var messageId = self.getAttribute("data-id");
+  // Get the message from the input
+  var message = messageInput.value;
 
-	// delete message
-	firebase.database().ref("messages").child(messageId).remove();
+  // Save the message to the database
+  database.ref('messages').push({
+    message: message
+  });
+
+  // Clear the input
+  messageInput.value = '';
 }
 
-// attach listener for delete message
-firebase.database().ref("messages").on("child_removed", function (snapshot) {
-	// remove message node
-	document.getElementById("message-" + snapshot.key).innerHTML = "This message has been removed";
-});
-  </script>
+// Listen for new messages
+database.ref('messages').on('child_added', function(data) {
+  // Get the message from the snapshot
+  var message = data.val().message;
+
+  // Create a new message element
+  var messageElement = document.createElement('div');
 </html>
